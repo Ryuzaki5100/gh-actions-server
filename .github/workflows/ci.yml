@@ -1,0 +1,46 @@
+name: Instant Webhook → Flask Response
+
+on:
+  repository_dispatch:
+    types: [run_flask]
+
+jobs:
+  flask:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t flask-app .
+
+      - name: Start Flask in background
+        run: docker run -d -p 5000:5000 --name flask flask-app
+
+      - name: Wait for Flask
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:5000/ >/dev/null; then
+              echo "Flask is ready!"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Timeout waiting for Flask"
+          exit 1
+
+      - name: Get response and send back to caller
+        run: |
+          RESPONSE=$(curl -s http://localhost:5000/)
+          echo "$RESPONSE"
+          echo "::set-output name=response::$RESPONSE"
+        id: flask_response
+
+      - name: Respond to webhook
+        uses: actions/github-script@v7
+        env:
+          RESPONSE: ${{ steps.flask_response.outputs.response }}
+        with:
+          script: |
+            const response = process.env.RESPONSE || "No response";
+            context.payload.sendResponse(response);
