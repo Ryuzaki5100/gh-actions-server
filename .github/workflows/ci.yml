@@ -33,14 +33,12 @@ jobs:
         run: |
           RESPONSE=$(curl -s http://localhost:5000/)
           echo "$RESPONSE"
-          echo "::set-output name=response::$RESPONSE"
         id: flask_response
-
-      - name: Respond to webhook
-        uses: actions/github-script@v7
-        env:
-          RESPONSE: ${{ steps.flask_response.outputs.response }}
-        with:
-          script: |
-            const response = process.env.RESPONSE || "No response";
-            context.payload.sendResponse(response);
+#       - name: Respond to webhook
+#        uses: actions/github-script@v7
+#        env:
+#          RESPONSE: ${{ steps.flask_response.outputs.response }}
+#        with:
+#          script: |
+#            const response = process.env.RESPONSE || "No response";
+#            context.payload.sendResponse(response);
